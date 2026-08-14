@@ -21,37 +21,24 @@ export interface AuthResponse {
 
 export const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {
-    // Mock login to bypass backend requirement
-    const tokens = { accessToken: 'mock-access-token', refreshToken: 'mock-refresh-token' };
+    const tokens = await apiClient.post<AuthResponse>('/api/v1/auth/login', data);
     apiClient.setTokens(tokens.accessToken, tokens.refreshToken);
-    // Store email temporarily to use in getMe mock if needed
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sb_mock_email', data.email);
-    }
     return tokens;
   },
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    // Mock registration to bypass backend requirement
-    const tokens = { accessToken: 'mock-access-token', refreshToken: 'mock-refresh-token' };
+    const tokens = await apiClient.post<AuthResponse>('/api/v1/auth/register', data);
     apiClient.setTokens(tokens.accessToken, tokens.refreshToken);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sb_mock_email', data.email);
-      localStorage.setItem('sb_mock_role', data.role);
-      localStorage.setItem('sb_mock_fname', data.firstName);
-      localStorage.setItem('sb_mock_lname', data.lastName);
-    }
     return tokens;
   },
 
   async logout(): Promise<void> {
-    // Mock logout
-    apiClient.clearTokens();
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('sb_mock_email');
-      localStorage.removeItem('sb_mock_role');
-      localStorage.removeItem('sb_mock_fname');
-      localStorage.removeItem('sb_mock_lname');
+    try {
+      await apiClient.post('/api/v1/auth/logout');
+    } catch (e) {
+      console.warn('Logout API failed, clearing tokens locally anyway', e);
+    } finally {
+      apiClient.clearTokens();
     }
   },
 };

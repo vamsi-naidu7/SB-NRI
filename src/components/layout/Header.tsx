@@ -7,7 +7,7 @@ import { Building2, Bell, X, Check, Menu, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Header() {
-  const { currentRole, setCurrentRole, notifications, markNotificationRead, isMobileMenuOpen, toggleMobileMenu } = useApp();
+  const { notifications, markNotificationRead, isMobileMenuOpen, toggleMobileMenu } = useApp();
   const { user, isAuthenticated, logout } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -16,14 +16,6 @@ export default function Header() {
     window.location.reload();
   };
 
-  const roles = [
-    { id: 'admin', label: 'Admin' },
-    { id: 'nri', label: 'NRI' },
-    { id: 'rm', label: 'RM' },
-    { id: 'agent', label: 'Agent' },
-    { id: 'lawyer', label: 'Lawyer' },
-    { id: 'ca', label: 'CA' }
-  ] as const;
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -51,21 +43,7 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex bg-[#FAF6EF] p-1 rounded-xl border border-[#E8DFD6]/60 overflow-x-auto scrollbar-none">
-            {roles.map((role) => (
-              <button
-                key={role.id}
-                onClick={() => setCurrentRole(role.id)}
-                className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
-                  currentRole === role.id
-                    ? 'bg-[#2C3E38] text-white shadow-xs'
-                    : 'text-[#2C3E38] hover:bg-white/60'
-                }`}
-              >
-                {role.label}
-              </button>
-            ))}
-          </div>
+
 
           <button
             onClick={() => setIsDrawerOpen(true)}

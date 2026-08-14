@@ -80,4 +80,27 @@ export declare class UsersService {
         updatedAt: Date;
     }) | null>;
     updateRefreshToken(userId: string, refreshToken: string | null): Promise<void>;
+    findAll(): Promise<({
+        roles: ({
+            role: {
+                id: string;
+                name: import("@prisma/client").$Enums.RoleName;
+                description: string | null;
+            };
+        } & {
+            roleId: string;
+            userId: string;
+        })[];
+    } & {
+        id: string;
+        email: string;
+        passwordHash: string;
+        firstName: string;
+        lastName: string;
+        phone: string | null;
+        isActive: boolean;
+        refreshToken: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    })[]>;
 }

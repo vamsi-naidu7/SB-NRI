@@ -42,6 +42,25 @@ let MaintenanceService = class MaintenanceService {
             data: { status }
         });
     }
+    async findAll(userId, roles) {
+        if (roles.includes('ADMIN') || roles.includes('RELATIONSHIP_MANAGER')) {
+            return this.prisma.maintenanceRequest.findMany({
+                include: { property: { include: { images: true } } },
+                orderBy: { createdAt: 'desc' },
+            });
+        }
+        return this.prisma.maintenanceRequest.findMany({
+            where: { nriId: userId },
+            include: { property: { include: { images: true } } },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+    async findOne(id) {
+        return this.prisma.maintenanceRequest.findUnique({
+            where: { id },
+            include: { property: { include: { images: true } } },
+        });
+    }
 };
 exports.MaintenanceService = MaintenanceService;
 exports.MaintenanceService = MaintenanceService = __decorate([

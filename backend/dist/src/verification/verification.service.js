@@ -86,6 +86,25 @@ let VerificationService = class VerificationService {
             }
         });
     }
+    async findAll(userId, roles) {
+        if (roles.includes('ADMIN') || roles.includes('RELATIONSHIP_MANAGER')) {
+            return this.prisma.verificationRequest.findMany({
+                include: {
+                    property: { include: { images: true } },
+                    checklists: { include: { items: true } },
+                },
+                orderBy: { createdAt: 'desc' },
+            });
+        }
+        return this.prisma.verificationRequest.findMany({
+            where: { requestedById: userId },
+            include: {
+                property: { include: { images: true } },
+                checklists: { include: { items: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
 };
 exports.VerificationService = VerificationService;
 exports.VerificationService = VerificationService = __decorate([

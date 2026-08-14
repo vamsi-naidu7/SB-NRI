@@ -43,6 +43,34 @@ let LeasesService = class LeasesService {
             }
         });
     }
+    async findAll(userId, roles) {
+        if (roles.includes('ADMIN') || roles.includes('RELATIONSHIP_MANAGER')) {
+            return this.prisma.lease.findMany({
+                include: { property: { include: { images: true } }, payments: true },
+                orderBy: { id: 'desc' },
+            });
+        }
+        return this.prisma.lease.findMany({
+            where: { nriId: userId },
+            include: { property: { include: { images: true } }, payments: true },
+            orderBy: { id: 'desc' },
+        });
+    }
+    async findOne(id) {
+        return this.prisma.lease.findUnique({
+            where: { id },
+            include: { property: { include: { images: true } }, payments: true },
+        });
+    }
+    async updateStatus(id, status, rmId, userRoles) {
+        if (!userRoles.includes('RELATIONSHIP_MANAGER') && !userRoles.includes('ADMIN')) {
+            throw new common_1.ForbiddenException('Only RM or Admin can update lease status');
+        }
+        return this.prisma.lease.update({
+            where: { id },
+            data: { status },
+        });
+    }
 };
 exports.LeasesService = LeasesService;
 exports.LeasesService = LeasesService = __decorate([

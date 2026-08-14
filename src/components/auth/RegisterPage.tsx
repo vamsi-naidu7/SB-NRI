@@ -133,26 +133,6 @@ export default function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[#2C3E38] mb-1.5" htmlFor="role">
-                Account Type
-              </label>
-              <select
-                id="role"
-                name="role"
-                required
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E8DFD6] focus:border-[#C7A36A] focus:ring-1 focus:ring-[#C7A36A] outline-none transition-all bg-white/50 text-[#2C3E38] appearance-none"
-                value={formData.role}
-                onChange={handleChange}
-              >
-                <option value="NRI">NRI (Property Owner)</option>
-                <option value="AGENT">Agent</option>
-                <option value="RELATIONSHIP_MANAGER">Relationship Manager</option>
-                <option value="LAWYER">Lawyer</option>
-                <option value="CHARTERED_ACCOUNTANT">Chartered Accountant</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-[#2C3E38] mb-1.5" htmlFor="password">

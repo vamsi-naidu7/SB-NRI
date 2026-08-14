@@ -108,6 +108,11 @@ let UsersService = class UsersService {
             data: { refreshToken },
         });
     }
+    async findAll() {
+        return this.prisma.user.findMany({
+            include: { roles: { include: { role: true } } },
+        });
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
