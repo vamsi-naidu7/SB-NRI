@@ -2,18 +2,27 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Building2, Bell, X, Check, Menu } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Building2, Bell, X, Check, Menu, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Header() {
   const { currentRole, setCurrentRole, notifications, markNotificationRead, isMobileMenuOpen, toggleMobileMenu } = useApp();
+  const { user, isAuthenticated, logout } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    window.location.reload();
+  };
 
   const roles = [
     { id: 'admin', label: 'Admin' },
     { id: 'nri', label: 'NRI' },
     { id: 'rm', label: 'RM' },
-    { id: 'agent', label: 'Agent' }
+    { id: 'agent', label: 'Agent' },
+    { id: 'lawyer', label: 'Lawyer' },
+    { id: 'ca', label: 'CA' }
   ] as const;
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -42,7 +51,7 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex bg-[#FAF6EF] p-1 rounded-xl border border-[#E8DFD6]/60 max-w-[200px] xs:max-w-none overflow-x-auto scrollbar-none">
+          <div className="flex bg-[#FAF6EF] p-1 rounded-xl border border-[#E8DFD6]/60 overflow-x-auto scrollbar-none">
             {roles.map((role) => (
               <button
                 key={role.id}
@@ -68,6 +77,21 @@ export default function Header() {
               <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#C7A36A] border-2 border-white rounded-full" />
             )}
           </button>
+          
+          {isAuthenticated && user && (
+            <div className="flex items-center gap-2 ml-1 border-l border-[#E8DFD6]/60 pl-3">
+              <span className="text-sm font-medium text-[#2C3E38] hidden sm:block">
+                {user.firstName} {user.lastName}
+              </span>
+              <button 
+                onClick={handleLogout} 
+                className="p-2 text-[#4A5568] hover:text-[#C7A36A] hover:bg-[#FAF6EF] transition-colors rounded-full shrink-0" 
+                title="Logout"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          )}
         </div>
       </header>
 

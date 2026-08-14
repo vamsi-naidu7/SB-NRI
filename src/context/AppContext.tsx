@@ -20,6 +20,17 @@ import {
   mockActivityLogs,
   mockChatMessages,
 } from '@/data/mockData';
+import { apiClient } from '@/lib/api';
+import { propertyService } from '@/lib/services/propertyService';
+import { verificationService } from '@/lib/services/verificationService';
+import { maintenanceService } from '@/lib/services/maintenanceService';
+import { leaseService } from '@/lib/services/leaseService';
+import { 
+  mapBackendProperty, 
+  mapBackendVerification, 
+  mapBackendMaintenance, 
+  mapBackendLease 
+} from '@/lib/adapters';
 
 interface AppContextType {
   currentRole: UserRole;
@@ -65,90 +76,108 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  // Load from localStorage on mount
+  // Load from database on mount
   useEffect(() => {
-    const loadState = () => {
+    const loadState = async () => {
       const storedRole = localStorage.getItem('sb_currentRole');
       if (storedRole) setCurrentRole(storedRole as UserRole);
 
-      const storedProperties = localStorage.getItem('sb_properties');
-      if (storedProperties) {
-        setProperties(JSON.parse(storedProperties));
+      if (apiClient.isAuthenticated()) {
+        try {
+          const [dbProps, dbVerifs, dbMaint, dbLeases] = await Promise.all([
+            propertyService.getAll(),
+            verificationService.getAll(),
+            maintenanceService.getAll(),
+            leaseService.getAll(),
+          ]);
+
+          if (dbProps.length > 0) setProperties(dbProps.map(mapBackendProperty));
+          else setProperties(mockProperties);
+
+          if (dbVerifs.length > 0) setVerificationRequests(dbVerifs.map(mapBackendVerification));
+          else setVerificationRequests(mockVerificationRequests);
+
+          if (dbMaint.length > 0) setMaintenanceRequests(dbMaint.map(mapBackendMaintenance));
+          else setMaintenanceRequests(mockMaintenanceRequests);
+
+          if (dbLeases.length > 0) setLeaseRequests(dbLeases.map(mapBackendLease));
+          else setLeaseRequests(mockLeaseRequests);
+
+          // Notifications, chat, activity logs - keep mock for now
+          setNotifications(mockNotifications);
+          setChatMessages(mockChatMessages);
+          setActivityLogs(mockActivityLogs);
+        } catch (error) {
+          console.warn('Failed to load from API, using mock data');
+          setProperties(mockProperties);
+          setVerificationRequests(mockVerificationRequests);
+          setMaintenanceRequests(mockMaintenanceRequests);
+          setLeaseRequests(mockLeaseRequests);
+          setNotifications(mockNotifications);
+          setChatMessages(mockChatMessages);
+          setActivityLogs(mockActivityLogs);
+        }
       } else {
+        // Not authenticated - use mock data for preview
         setProperties(mockProperties);
-        localStorage.setItem('sb_properties', JSON.stringify(mockProperties));
-      }
-
-      const storedVerificationRequests = localStorage.getItem('sb_verificationRequests');
-      if (storedVerificationRequests) {
-        setVerificationRequests(JSON.parse(storedVerificationRequests));
-      } else {
         setVerificationRequests(mockVerificationRequests);
-        localStorage.setItem('sb_verificationRequests', JSON.stringify(mockVerificationRequests));
-      }
-
-      const storedMaintenanceRequests = localStorage.getItem('sb_maintenanceRequests');
-      if (storedMaintenanceRequests) {
-        setMaintenanceRequests(JSON.parse(storedMaintenanceRequests));
-      } else {
         setMaintenanceRequests(mockMaintenanceRequests);
-        localStorage.setItem('sb_maintenanceRequests', JSON.stringify(mockMaintenanceRequests));
-      }
-
-      const storedLeaseRequests = localStorage.getItem('sb_leaseRequests');
-      if (storedLeaseRequests) {
-        setLeaseRequests(JSON.parse(storedLeaseRequests));
-      } else {
         setLeaseRequests(mockLeaseRequests);
-        localStorage.setItem('sb_leaseRequests', JSON.stringify(mockLeaseRequests));
-      }
-
-      const storedNotifications = localStorage.getItem('sb_notifications');
-      if (storedNotifications) {
-        setNotifications(JSON.parse(storedNotifications));
-      } else {
         setNotifications(mockNotifications);
-        localStorage.setItem('sb_notifications', JSON.stringify(mockNotifications));
-      }
-
-      const storedChatMessages = localStorage.getItem('sb_chatMessages');
-      if (storedChatMessages) {
-        setChatMessages(JSON.parse(storedChatMessages));
-      } else {
         setChatMessages(mockChatMessages);
-        localStorage.setItem('sb_chatMessages', JSON.stringify(mockChatMessages));
-      }
-
-      const storedActivityLogs = localStorage.getItem('sb_activityLogs');
-      if (storedActivityLogs) {
-        setActivityLogs(JSON.parse(storedActivityLogs));
-      } else {
         setActivityLogs(mockActivityLogs);
-        localStorage.setItem('sb_activityLogs', JSON.stringify(mockActivityLogs));
       }
     };
 
     loadState();
   }, []);
 
-  // Persist state changes
+  // Persist state changes (optional, since we now have a DB, but keeps it snappy)
   useEffect(() => { localStorage.setItem('sb_currentRole', currentRole); }, [currentRole]);
-  useEffect(() => { localStorage.setItem('sb_properties', JSON.stringify(properties)); }, [properties]);
-  useEffect(() => { localStorage.setItem('sb_verificationRequests', JSON.stringify(verificationRequests)); }, [verificationRequests]);
-  useEffect(() => { localStorage.setItem('sb_maintenanceRequests', JSON.stringify(maintenanceRequests)); }, [maintenanceRequests]);
-  useEffect(() => { localStorage.setItem('sb_leaseRequests', JSON.stringify(leaseRequests)); }, [leaseRequests]);
-  useEffect(() => { localStorage.setItem('sb_notifications', JSON.stringify(notifications)); }, [notifications]);
-  useEffect(() => { localStorage.setItem('sb_chatMessages', JSON.stringify(chatMessages)); }, [chatMessages]);
-  useEffect(() => { localStorage.setItem('sb_activityLogs', JSON.stringify(activityLogs)); }, [activityLogs]);
 
-  // Actions
-  const addProperty = (property: Property) => setProperties(prev => [property, ...prev]);
+  // Actions (Optimistic UI updates)
+  const addProperty = (property: Property) => {
+    setProperties(prev => [property, ...prev]);
+    // Fire API call in background
+    propertyService.create({
+      title: property.title,
+      type: property.type.toUpperCase(),
+      price: property.price,
+      address: property.address,
+      area: property.plotAreaSqFt,
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      description: property.description,
+    }).catch(err => console.warn('Failed to save property to API:', err));
+  };
   const updateProperty = (id: string, updates: Partial<Property>) => setProperties(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
-  const addVerificationRequest = (request: VerificationRequest) => setVerificationRequests(prev => [request, ...prev]);
+  
+  const addVerificationRequest = (request: VerificationRequest) => {
+    setVerificationRequests(prev => [request, ...prev]);
+    if (request.propertyId) {
+      verificationService.requestVerification(request.propertyId)
+        .catch(err => console.warn('Failed to save verification to API:', err));
+    }
+  };
   const updateVerificationRequest = (id: string, updates: Partial<VerificationRequest>) => setVerificationRequests(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
-  const addMaintenanceRequest = (request: MaintenanceRequest) => setMaintenanceRequests(prev => [request, ...prev]);
+  
+  const addMaintenanceRequest = (request: MaintenanceRequest) => {
+    setMaintenanceRequests(prev => [request, ...prev]);
+    maintenanceService.create({
+      propertyId: request.propertyId,
+      description: request.requirements,
+    }).catch(err => console.warn('Failed to save maintenance to API:', err));
+  };
   const updateMaintenanceRequest = (id: string, updates: Partial<MaintenanceRequest>) => setMaintenanceRequests(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
-  const addLeaseRequest = (request: LeaseRequest) => setLeaseRequests(prev => [request, ...prev]);
+  
+  const addLeaseRequest = (request: LeaseRequest) => {
+    setLeaseRequests(prev => [request, ...prev]);
+    leaseService.create({
+      propertyId: request.propertyId,
+      expectedRent: request.expectedMonthlyRent,
+      specialConditions: request.specialConditions,
+    }).catch(err => console.warn('Failed to save lease to API:', err));
+  };
   const updateLeaseRequest = (id: string, updates: Partial<LeaseRequest>) => setLeaseRequests(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
   const addNotification = (notification: Notification) => setNotifications(prev => [notification, ...prev]);
   const markNotificationRead = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));

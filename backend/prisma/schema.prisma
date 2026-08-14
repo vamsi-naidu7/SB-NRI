@@ -1,0 +1,466 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User & Role Management
+model User {
+  id             String     @id @default(uuid())
+  email          String     @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  phone          String?
+  isActive       Boolean    @default(true)
+  refreshToken   String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  roles          UserRole[]
+  properties     Property[] @relation("OwnedProperties")
+  listedProps    Property[] @relation("AgentProperties")
+  
+  auditLogs      AuditLog[]
+
+  // Assignment relations
+  managedProperties Property[] @relation("RelationshipManagerProperties")
+  
+  notifications Notification[]
+  deviceTokens  DeviceToken[]
+}
+
+model Role {
+  id          String     @id @default(uuid())
+  name        RoleName   @unique
+  description String?
+  users       UserRole[]
+}
+
+enum RoleName {
+  ADMIN
+  NRI
+  RELATIONSHIP_MANAGER
+  AGENT
+  LAWYER
+  SITE_INSPECTOR
+  CA
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+}
+
+// Property Module
+model Property {
+  id            String         @id @default(uuid())
+  title         String
+  type          PropertyType
+  source        PropertySource
+  status        PropertyStatus @default(PENDING_REVIEW)
+  
+  price         Decimal?
+  address       String
+  coordinates   String? // JSON or comma separated string
+  area          Decimal?
+  bedrooms      Int?
+  bathrooms     Int?
+  description   String?
+  ownerDetails  String? // JSON or text
+  sellerDetails String? // JSON or text
+  
+  ownerId       String? // If external, belongs to an NRI
+  owner         User?   @relation("OwnedProperties", fields: [ownerId], references: [id])
+
+  agentId       String? // If listed, belongs to an Agent
+  agent         User?   @relation("AgentProperties", fields: [agentId], references: [id])
+
+  rmId          String? // Assigned Relationship Manager
+  rm            User?   @relation("RelationshipManagerProperties", fields: [rmId], references: [id])
+
+  images        PropertyImage[]
+  videos        PropertyVideo[]
+  documents     PropertyDocument[]
+
+  verificationRequests VerificationRequest[]
+  assignments          VerificationAssignment[]
+  inspections          Inspection[]
+  purchaseProcesses    PurchaseProcessing[]
+  maintenanceRequests  MaintenanceRequest[]
+  leases               Lease[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+  PLOT
+  APARTMENT
+  VILLA
+  INDEPENDENT_HOUSE
+  OFFICE
+  SHOP
+  WAREHOUSE
+  OTHER
+}
+
+enum PropertySource {
+  LISTED_PROPERTY
+  EXTERNAL_PROPERTY
+}
+
+enum PropertyStatus {
+  PENDING_REVIEW
+  ACTIVE
+  VERIFICATION_REQUESTED
+  VERIFICATION_IN_PROGRESS
+  VERIFICATION_COMPLETED
+  PURCHASE_PROCESSING
+  SOLD
+  INACTIVE
+}
+
+model PropertyImage {
+  id         String   @id @default(uuid())
+  propertyId String
+  url        String
+  property   Property @relation(fields: [propertyId], references: [id])
+}
+
+model PropertyVideo {
+  id         String   @id @default(uuid())
+  propertyId String
+  url        String
+  property   Property @relation(fields: [propertyId], references: [id])
+}
+
+// Document Management & Access
+model PropertyDocument {
+  id               String   @id @default(uuid())
+  propertyId       String
+  uploadedById     String
+  documentType     String
+  originalFileName String
+  storageKey       String
+  mimeType         String
+  fileSize         Int
+  createdAt        DateTime @default(now())
+
+  property         Property @relation(fields: [propertyId], references: [id])
+  accessRecords    DocumentAccess[]
+}
+
+model DocumentAccess {
+  id           String   @id @default(uuid())
+  documentId   String
+  userId       String   // Professional receiving access
+  grantedById  String   // RM who granted access
+  accessType   String   @default("READ") // e.g. READ, DOWNLOAD
+  grantedAt    DateTime @default(now())
+  revokedAt    DateTime?
+  status       AccessStatus @default(ACTIVE)
+
+  document     PropertyDocument @relation(fields: [documentId], references: [id])
+}
+
+enum AccessStatus {
+  ACTIVE
+  REVOKED
+}
+
+// Verification Engine
+model VerificationTemplate {
+  id           String                 @id @default(uuid())
+  propertyType PropertyType
+  version      String
+  categories   VerificationCategory[]
+}
+
+model VerificationCategory {
+  id         String   @id @default(uuid())
+  templateId String
+  name       String
+  template   VerificationTemplate @relation(fields: [templateId], references: [id])
+  items      VerificationItem[]
+}
+
+model VerificationItem {
+  id          String   @id @default(uuid())
+  categoryId  String
+  name        String
+  description String?
+  category    VerificationCategory @relation(fields: [categoryId], references: [id])
+}
+
+model VerificationRequest {
+  id           String             @id @default(uuid())
+  propertyId   String
+  requestedById String
+  rmId         String?            // RM assigned to this request
+  status       VerificationStatus @default(REQUESTED)
+  
+  property     Property           @relation(fields: [propertyId], references: [id])
+  checklists   VerificationChecklist[]
+  
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+enum VerificationStatus {
+  REQUESTED
+  ASSIGNED
+  VERIFICATION_IN_PROGRESS
+  LAWYER_VERIFICATION
+  SITE_INSPECTION
+  RM_REVIEW
+  FINALIZED
+  COMPLETED
+}
+
+model VerificationChecklist {
+  id         String   @id @default(uuid())
+  requestId  String
+  propertyId String
+  
+  request    VerificationRequest @relation(fields: [requestId], references: [id])
+  items      VerificationChecklistItem[]
+}
+
+model VerificationChecklistItem {
+  id             String   @id @default(uuid())
+  checklistId    String
+  name           String
+  status         ChecklistItemStatus @default(PENDING)
+  result         String?
+  issue          String?
+  rmComment      String?
+  recommendation String?
+  completedAt    DateTime?
+  
+  checklist      VerificationChecklist @relation(fields: [checklistId], references: [id])
+}
+
+enum ChecklistItemStatus {
+  PENDING
+  IN_PROGRESS
+  VERIFIED
+  VERIFIED_WITH_CONDITIONS
+  ISSUE_FOUND
+  REQUIRES_CLARIFICATION
+  NOT_VERIFIED
+  NOT_APPLICABLE
+}
+
+model VerificationAssignment {
+  id             String   @id @default(uuid())
+  propertyId     String
+  rmId           String
+  professionalId String
+  role           RoleName
+  status         AssignmentStatus @default(ASSIGNED)
+  
+  property       Property @relation(fields: [propertyId], references: [id])
+  findings       ProfessionalFinding[]
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  IN_PROGRESS
+  SUBMITTED
+  REVIEWED
+}
+
+model ProfessionalFinding {
+  id             String   @id @default(uuid())
+  assignmentId   String
+  findings       String?  // JSON or Text
+  issues         String?  // JSON or Text
+  recommendations String? // JSON or Text
+  
+  assignment     VerificationAssignment @relation(fields: [assignmentId], references: [id])
+}
+
+// Inspections
+model Inspection {
+  id           String   @id @default(uuid())
+  propertyId   String
+  inspectorId  String
+  rmId         String
+  type         InspectionType
+  scheduledAt  DateTime?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  status       InspectionStatus @default(SCHEDULED)
+  
+  property     Property @relation(fields: [propertyId], references: [id])
+  findings     InspectionFinding[]
+}
+
+enum InspectionType {
+  ROUTINE_SITE
+  MONTHLY
+  EMERGENCY
+}
+
+enum InspectionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model InspectionFinding {
+  id              String   @id @default(uuid())
+  inspectionId    String
+  photos          String?  // JSON Array of URLs or keys
+  videos          String?  // JSON Array of URLs or keys
+  observations    String?
+  issues          String?
+  recommendations String?
+  reportKey       String?  // PDF report storage key
+  
+  inspection      Inspection @relation(fields: [inspectionId], references: [id])
+}
+
+// Purchase Processing
+model PurchaseProcessing {
+  id          String   @id @default(uuid())
+  propertyId  String
+  nriId       String
+  rmId        String
+  caId        String?
+  status      PurchaseStatus @default(DECISION_PENDING)
+  
+  property    Property @relation(fields: [propertyId], references: [id])
+  caFindings  CAFinding[]
+}
+
+enum PurchaseStatus {
+  DECISION_PENDING
+  PURCHASE_CONFIRMED
+  CA_ASSIGNED
+  CA_PROCESSING
+  CA_REVIEW
+  PROCESSING_COMPLETED
+  CANCELLED
+}
+
+model CAFinding {
+  id             String   @id @default(uuid())
+  purchaseId     String
+  caId           String
+  findings       String?  // JSON or Text
+  
+  purchase       PurchaseProcessing @relation(fields: [purchaseId], references: [id])
+}
+
+// Maintenance & Leases
+model MaintenanceRequest {
+  id          String   @id @default(uuid())
+  propertyId  String
+  nriId       String
+  description String
+  priority    String   @default("NORMAL")
+  images      String?  // JSON array
+  videos      String?  // JSON array
+  status      MaintenanceStatus @default(REQUESTED)
+  assignedRMId String?
+  
+  property    Property @relation(fields: [propertyId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+enum MaintenanceStatus {
+  REQUESTED
+  ASSIGNED
+  ACTIVE
+  INSPECTION_SCHEDULED
+  INSPECTION_COMPLETED
+  ISSUE_REPORTED
+  RESOLVED
+  COMPLETED
+}
+
+model Lease {
+  id                String   @id @default(uuid())
+  propertyId        String
+  nriId             String
+  startDate         DateTime?
+  endDate           DateTime?
+  expectedRent      Decimal?
+  specialConditions String?
+  status            LeaseStatus @default(REQUESTED)
+  
+  property          Property @relation(fields: [propertyId], references: [id])
+  payments          LeasePayment[]
+}
+
+enum LeaseStatus {
+  REQUESTED
+  AGREEMENT_PENDING
+  ACTIVE
+  RENEWAL_DUE
+  RENEWED
+  CLOSED
+}
+
+model LeasePayment {
+  id          String   @id @default(uuid())
+  leaseId     String
+  amount      Decimal
+  date        DateTime
+  
+  lease       Lease    @relation(fields: [leaseId], references: [id])
+}
+
+// Shared Infrastructure
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // IN_APP, PUSH, EMAIL, WHATSAPP
+  content   String   // JSON or Text
+  status    String   @default("PENDING") // PENDING, SENT, FAILED
+  
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String
+  
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  action       String
+  resourceType String
+  resourceId   String?
+  details      String?  // JSON for previous/new state
+  ipAddress    String?
+  
+  user         User?    @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Report {
+  id           String   @id @default(uuid())
+  propertyId   String
+  generatedById String
+  type         String   // e.g. VERIFICATION_SUMMARY, SITE_INSPECTION, MAINTENANCE
+  storageKey   String
+  createdAt    DateTime @default(now())
+}

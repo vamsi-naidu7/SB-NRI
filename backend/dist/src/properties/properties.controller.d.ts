@@ -1,0 +1,105 @@
+import { PropertiesService } from './properties.service';
+export declare class PropertiesController {
+    private readonly propertiesService;
+    constructor(propertiesService: PropertiesService);
+    create(createPropertyDto: any, req: any): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        title: string;
+        type: import("@prisma/client").$Enums.PropertyType;
+        source: import("@prisma/client").$Enums.PropertySource;
+        status: import("@prisma/client").$Enums.PropertyStatus;
+        price: import("@prisma/client-runtime-utils").Decimal | null;
+        address: string;
+        coordinates: string | null;
+        area: import("@prisma/client-runtime-utils").Decimal | null;
+        bedrooms: number | null;
+        bathrooms: number | null;
+        ownerDetails: string | null;
+        sellerDetails: string | null;
+        ownerId: string | null;
+        agentId: string | null;
+        rmId: string | null;
+    }>;
+    findAll(query: any): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        title: string;
+        type: import("@prisma/client").$Enums.PropertyType;
+        source: import("@prisma/client").$Enums.PropertySource;
+        status: import("@prisma/client").$Enums.PropertyStatus;
+        price: import("@prisma/client-runtime-utils").Decimal | null;
+        address: string;
+        coordinates: string | null;
+        area: import("@prisma/client-runtime-utils").Decimal | null;
+        bedrooms: number | null;
+        bathrooms: number | null;
+        ownerDetails: string | null;
+        sellerDetails: string | null;
+        ownerId: string | null;
+        agentId: string | null;
+        rmId: string | null;
+    }[]>;
+    findOne(id: string, req: any): Promise<{
+        owner: {
+            id: string;
+            email: string;
+            passwordHash: string;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            isActive: boolean;
+            refreshToken: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        agent: {
+            id: string;
+            email: string;
+            passwordHash: string;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            isActive: boolean;
+            refreshToken: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        rm: {
+            id: string;
+            email: string;
+            passwordHash: string;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            isActive: boolean;
+            refreshToken: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        title: string;
+        type: import("@prisma/client").$Enums.PropertyType;
+        source: import("@prisma/client").$Enums.PropertySource;
+        status: import("@prisma/client").$Enums.PropertyStatus;
+        price: import("@prisma/client-runtime-utils").Decimal | null;
+        address: string;
+        coordinates: string | null;
+        area: import("@prisma/client-runtime-utils").Decimal | null;
+        bedrooms: number | null;
+        bathrooms: number | null;
+        ownerDetails: string | null;
+        sellerDetails: string | null;
+        ownerId: string | null;
+        agentId: string | null;
+        rmId: string | null;
+    }>;
+}

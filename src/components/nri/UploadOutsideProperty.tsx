@@ -2,7 +2,9 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { motion } from 'framer-motion';
-import { Upload, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Upload, CheckCircle2, ShieldAlert, Scale, Calculator, Check } from 'lucide-react';
+import { createDefaultCheckpoints } from '@/data/checkpoints';
+import { VerificationCheckpoint } from '@/types';
 
 export default function UploadOutsideProperty() {
   const { addVerificationRequest } = useApp();
@@ -14,14 +16,27 @@ export default function UploadOutsideProperty() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [checkpoints, setCheckpoints] = useState<VerificationCheckpoint[]>(() => createDefaultCheckpoints());
+
+  const toggleCheckpoint = (id: string) => {
+    setCheckpoints(prev => prev.map(cp => cp.id === id ? { ...cp, selected: !cp.selected } : cp));
+  };
+
+  const selectAllCategory = (category: 'legal' | 'financial', selected: boolean) => {
+    setCheckpoints(prev => prev.map(cp => cp.category === category ? { ...cp, selected } : cp));
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const legalCheckpoints = checkpoints.filter(cp => cp.category === 'legal');
+  const financialCheckpoints = checkpoints.filter(cp => cp.category === 'financial');
+  const selectedCount = checkpoints.filter(cp => cp.selected).length;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate property creation and verification request
+    const selectedCheckpoints = checkpoints.filter(cp => cp.selected);
     addVerificationRequest({
       id: `ext-${Date.now()}`,
       propertyTitle: formData.title,
@@ -48,6 +63,7 @@ export default function UploadOutsideProperty() {
       assignedRmId: 'rm-1',
       assignedRmName: 'Priya Verma',
       status: 'Submitted',
+      checkpoints: selectedCheckpoints,
       dateSubmitted: new Date().toISOString(),
       dateUpdated: new Date().toISOString()
     });
@@ -59,6 +75,7 @@ export default function UploadOutsideProperty() {
         sellerName: '', sellerContact: '', sellerEmail: '',
         notes: '', photoUrl1: '', photoUrl2: ''
       });
+      setCheckpoints(createDefaultCheckpoints());
     }, 3000);
   };
 
@@ -83,7 +100,7 @@ export default function UploadOutsideProperty() {
             <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-[#2C3E38]" />
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-[#2C3E38] mb-2">Request Submitted Successfully!</h2>
-          <p className="text-xs sm:text-sm text-[#4A5568]">Your Relationship Manager has been notified and will begin the verification process shortly.</p>
+          <p className="text-xs sm:text-sm text-[#4A5568]">Your verification checkpoints have been assigned to our Lawyer and Chartered Accountant. Your RM has been notified.</p>
         </motion.div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
@@ -154,8 +171,77 @@ export default function UploadOutsideProperty() {
             </div>
           </div>
 
+          {/* Verification Checkpoints */}
+          <div className="p-6 rounded-2xl bg-white shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-[#E8DFD6]/50 space-y-5">
+            <h2 className="text-xl font-bold text-[#2C3E38] flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-[#C7A36A]" />
+              Verification Checkpoints
+            </h2>
+            <p className="text-sm text-[#4A5568]">
+              Select which checks to perform. Legal checks go to our <span className="font-semibold text-[#6366f1]">Lawyer</span>, financial checks to our <span className="font-semibold text-[#0891b2]">Chartered Accountant</span>.
+            </p>
+
+            {/* Legal */}
+            <div className="rounded-xl border border-[#6366f1]/20 overflow-hidden">
+              <div className="bg-[#6366f1]/5 px-4 py-3 flex items-center justify-between border-b border-[#6366f1]/20">
+                <div className="flex items-center gap-2">
+                  <Scale className="w-4 h-4 text-[#6366f1]" />
+                  <span className="text-sm font-bold text-[#2C3E38]">Legal Checkpoints</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#6366f1]/10 text-[#6366f1] font-medium">→ Lawyer</span>
+                </div>
+                <button type="button" onClick={() => { const all = legalCheckpoints.every(cp => cp.selected); selectAllCategory('legal', !all); }} className="text-xs font-medium text-[#6366f1]">
+                  {legalCheckpoints.every(cp => cp.selected) ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
+              <div className="divide-y divide-[#E8DFD6]/50">
+                {legalCheckpoints.map(cp => (
+                  <button key={cp.id} type="button" onClick={() => toggleCheckpoint(cp.id)} className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${cp.selected ? 'bg-[#6366f1]/5' : 'bg-white hover:bg-[#FAF6EF]'}`}>
+                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${cp.selected ? 'bg-[#6366f1] border-[#6366f1]' : 'border-[#E8DFD6]'}`}>
+                      {cp.selected && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#2C3E38]">{cp.name}</p>
+                      <p className="text-xs text-[#4A5568]">{cp.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Financial */}
+            <div className="rounded-xl border border-[#0891b2]/20 overflow-hidden">
+              <div className="bg-[#0891b2]/5 px-4 py-3 flex items-center justify-between border-b border-[#0891b2]/20">
+                <div className="flex items-center gap-2">
+                  <Calculator className="w-4 h-4 text-[#0891b2]" />
+                  <span className="text-sm font-bold text-[#2C3E38]">Financial Checkpoints</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#0891b2]/10 text-[#0891b2] font-medium">→ Chartered Accountant</span>
+                </div>
+                <button type="button" onClick={() => { const all = financialCheckpoints.every(cp => cp.selected); selectAllCategory('financial', !all); }} className="text-xs font-medium text-[#0891b2]">
+                  {financialCheckpoints.every(cp => cp.selected) ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
+              <div className="divide-y divide-[#E8DFD6]/50">
+                {financialCheckpoints.map(cp => (
+                  <button key={cp.id} type="button" onClick={() => toggleCheckpoint(cp.id)} className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${cp.selected ? 'bg-[#0891b2]/5' : 'bg-white hover:bg-[#FAF6EF]'}`}>
+                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${cp.selected ? 'bg-[#0891b2] border-[#0891b2]' : 'border-[#E8DFD6]'}`}>
+                      {cp.selected && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#2C3E38]">{cp.name}</p>
+                      <p className="text-xs text-[#4A5568]">{cp.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="text-sm text-[#4A5568]">
+              <span className="font-bold text-[#2C3E38]">{selectedCount}</span> of {checkpoints.length} checkpoints selected
+            </div>
+          </div>
+
           <div className="flex justify-end pt-2">
-            <button type="submit" className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#2C3E38] hover:bg-[#2C3E38]/90 text-white text-sm font-semibold transition-colors shadow-md">
+            <button type="submit" disabled={selectedCount === 0} className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#2C3E38] hover:bg-[#2C3E38]/90 text-white text-sm font-semibold transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
               <Upload className="w-4 h-4 text-[#C7A36A]" />
               Submit for Verification
             </button>
@@ -165,3 +251,4 @@ export default function UploadOutsideProperty() {
     </motion.div>
   );
 }
+

@@ -93,55 +93,145 @@ export default function VerificationWorkflow() {
 
       <div className="grid gap-4">
         <AnimatePresence>
-          {filteredRequests.map(req => (
-            <motion.div
-              key={req.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-[#E8DFD6]/50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-medium text-[#2C3E38]">{req.propertyTitle}</h3>
-                  {req.isExternal && (
-                    <span className="px-2 py-1 bg-[#C7A36A]/10 text-[#C7A36A] text-xs rounded-md border border-[#C7A36A]/20">External Property</span>
-                  )}
-                </div>
-                <p className="text-[#4A5568] text-sm flex items-center gap-1">
-                  <MapPin className="w-4 h-4" /> {req.propertyAddress}
-                </p>
-                <div className="text-sm text-[#4A5568]">
-                  <span className="font-medium text-[#2C3E38]">{req.nriName}</span> • {req.nriEmail}
-                </div>
-              </div>
-              
-              <div className="flex flex-col items-end gap-3 w-full md:w-auto">
-                <StatusBadge status={req.status} />
+          {filteredRequests.map(req => {
+            const checkpoints = req.checkpoints || [];
+            const legalCps = checkpoints.filter(cp => cp.assignedTo === 'lawyer' && cp.selected);
+            const financialCps = checkpoints.filter(cp => cp.assignedTo === 'ca' && cp.selected);
+            const totalSelected = checkpoints.filter(cp => cp.selected).length;
+            const totalDone = checkpoints.filter(cp => cp.selected && (cp.status === 'approved' || cp.status === 'flagged')).length;
+            const progressPct = totalSelected > 0 ? Math.round((totalDone / totalSelected) * 100) : 0;
+
+            return (
+              <motion.div
+                key={req.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-[#E8DFD6]/50 rounded-xl p-5 space-y-4"
+              >
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-medium text-[#2C3E38]">{req.propertyTitle}</h3>
+                      {req.isExternal && (
+                        <span className="px-2 py-1 bg-[#C7A36A]/10 text-[#C7A36A] text-xs rounded-md border border-[#C7A36A]/20">External Property</span>
+                      )}
+                    </div>
+                    <p className="text-[#4A5568] text-sm flex items-center gap-1">
+                      <MapPin className="w-4 h-4" /> {req.propertyAddress}
+                    </p>
+                    <div className="text-sm text-[#4A5568]">
+                      <span className="font-medium text-[#2C3E38]">{req.nriName}</span> • {req.nriEmail}
+                    </div>
+                  </div>
                 
-                {req.status === 'Submitted' && (
-                  <button onClick={() => handleStatusChange(req.id, 'Assigned')} className="px-6 py-2 bg-[#2C3E38] hover:bg-[#2C3E38]/90 text-white rounded-full text-sm font-medium transition-colors w-full md:w-auto">
-                    Accept Assignment
-                  </button>
+                  <div className="flex flex-col items-end gap-3 w-full md:w-auto">
+                    <StatusBadge status={req.status} />
+                    
+                    {req.status === 'Submitted' && (
+                      <button onClick={() => handleStatusChange(req.id, 'Assigned')} className="px-6 py-2 bg-[#2C3E38] hover:bg-[#2C3E38]/90 text-white rounded-full text-sm font-medium transition-colors w-full md:w-auto">
+                        Accept Assignment
+                      </button>
+                    )}
+                    {req.status === 'Assigned' && (
+                      <button onClick={() => handleStatusChange(req.id, 'Verification In Progress')} className="px-6 py-2 bg-[#2C3E38] hover:bg-[#2C3E38]/90 text-white rounded-full text-sm font-medium transition-colors w-full md:w-auto">
+                        Start Verification
+                      </button>
+                    )}
+                    {req.status === 'Verification In Progress' && (
+                      <button onClick={() => openReportModal(req.id)} className="px-6 py-2 bg-[#C7A36A] hover:bg-[#C7A36A]/90 text-white rounded-full text-sm font-medium transition-colors flex items-center gap-2 justify-center w-full md:w-auto">
+                        <Upload className="w-4 h-4" /> Upload Report
+                      </button>
+                    )}
+                    {req.status === 'Report Uploaded' && (
+                      <button onClick={() => handleStatusChange(req.id, 'Completed')} className="px-6 py-2 bg-[#2C3E38] hover:bg-[#2C3E38]/90 text-white rounded-full text-sm font-medium transition-colors w-full md:w-auto">
+                        Mark Complete
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Checkpoint Progress Panel for RM */}
+                {totalSelected > 0 && (
+                  <div className="border-t border-[#E8DFD6] pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-[#2C3E38]">Verification Checkpoints</h4>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-1.5 bg-[#E8DFD6] rounded-full">
+                          <div className="h-full bg-gradient-to-r from-[#6366f1] to-[#0891b2] rounded-full transition-all" style={{ width: `${progressPct}%` }} />
+                        </div>
+                        <span className="text-xs font-bold text-[#2C3E38]">{totalDone}/{totalSelected}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      {/* Legal */}
+                      {legalCps.length > 0 && (
+                        <div className="rounded-lg border border-[#6366f1]/20 p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#6366f1]" />
+                            <span className="text-xs font-bold text-[#2C3E38]">Legal (Lawyer)</span>
+                            <span className="text-xs text-[#4A5568] ml-auto">
+                              {legalCps.filter(cp => cp.status === 'approved' || cp.status === 'flagged').length}/{legalCps.length}
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {legalCps.map(cp => (
+                              <div key={cp.id} className="flex items-center gap-2 text-xs">
+                                {cp.status === 'approved' ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> :
+                                 cp.status === 'flagged' ? <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" /> :
+                                 cp.status === 'in-review' ? <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" /> :
+                                 <div className="w-3.5 h-3.5 rounded-full border-2 border-[#E8DFD6] shrink-0" />}
+                                <span className={`truncate ${cp.status === 'approved' ? 'text-emerald-700' : cp.status === 'flagged' ? 'text-amber-700' : 'text-[#4A5568]'}`}>
+                                  {cp.name}
+                                </span>
+                                {cp.reviewerName && (
+                                  <span className="text-[#4A5568]/60 ml-auto shrink-0 hidden sm:inline">
+                                    {cp.reviewerName.split(' ').pop()}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Financial */}
+                      {financialCps.length > 0 && (
+                        <div className="rounded-lg border border-[#0891b2]/20 p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#0891b2]" />
+                            <span className="text-xs font-bold text-[#2C3E38]">Financial (CA)</span>
+                            <span className="text-xs text-[#4A5568] ml-auto">
+                              {financialCps.filter(cp => cp.status === 'approved' || cp.status === 'flagged').length}/{financialCps.length}
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {financialCps.map(cp => (
+                              <div key={cp.id} className="flex items-center gap-2 text-xs">
+                                {cp.status === 'approved' ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> :
+                                 cp.status === 'flagged' ? <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" /> :
+                                 cp.status === 'in-review' ? <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" /> :
+                                 <div className="w-3.5 h-3.5 rounded-full border-2 border-[#E8DFD6] shrink-0" />}
+                                <span className={`truncate ${cp.status === 'approved' ? 'text-emerald-700' : cp.status === 'flagged' ? 'text-amber-700' : 'text-[#4A5568]'}`}>
+                                  {cp.name}
+                                </span>
+                                {cp.reviewerName && (
+                                  <span className="text-[#4A5568]/60 ml-auto shrink-0 hidden sm:inline">
+                                    {cp.reviewerName.split(' ').pop()}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
-                {req.status === 'Assigned' && (
-                  <button onClick={() => handleStatusChange(req.id, 'Verification In Progress')} className="px-6 py-2 bg-[#2C3E38] hover:bg-[#2C3E38]/90 text-white rounded-full text-sm font-medium transition-colors w-full md:w-auto">
-                    Start Verification
-                  </button>
-                )}
-                {req.status === 'Verification In Progress' && (
-                  <button onClick={() => openReportModal(req.id)} className="px-6 py-2 bg-[#C7A36A] hover:bg-[#C7A36A]/90 text-white rounded-full text-sm font-medium transition-colors flex items-center gap-2 justify-center w-full md:w-auto">
-                    <Upload className="w-4 h-4" /> Upload Report
-                  </button>
-                )}
-                {req.status === 'Report Uploaded' && (
-                  <button onClick={() => handleStatusChange(req.id, 'Completed')} className="px-6 py-2 bg-[#2C3E38] hover:bg-[#2C3E38]/90 text-white rounded-full text-sm font-medium transition-colors w-full md:w-auto">
-                    Mark Complete
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
           {filteredRequests.length === 0 && (
             <p className="text-[#4A5568] text-center py-8">No verification requests found.</p>
           )}

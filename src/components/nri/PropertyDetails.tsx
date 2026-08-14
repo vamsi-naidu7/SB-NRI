@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, ExternalLink, CheckCircle, ShieldCheck, Wrench, FileText, BedDouble, Bath, Square, Home } from 'lucide-react';
+import { ArrowLeft, MapPin, ExternalLink, CheckCircle, ShieldCheck, Wrench, FileText, BedDouble, Bath, Square, Home, Scale, Calculator, Check } from 'lucide-react';
 import ImageCarousel from '@/components/ui/ImageCarousel';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Modal from '@/components/ui/Modal';
+import { createDefaultCheckpoints } from '@/data/checkpoints';
+import { VerificationCheckpoint } from '@/types';
 
 interface PropertyDetailsProps {
   propertyId: string;
@@ -41,9 +43,25 @@ export default function PropertyDetails({ propertyId, onBack }: PropertyDetailsP
   const [leaseDuration, setLeaseDuration] = useState('12');
   const [leaseRent, setLeaseRent] = useState('');
 
+  // Checkpoint state
+  const [checkpoints, setCheckpoints] = useState<VerificationCheckpoint[]>(() => createDefaultCheckpoints());
+
+  const toggleCheckpoint = (id: string) => {
+    setCheckpoints(prev => prev.map(cp => cp.id === id ? { ...cp, selected: !cp.selected } : cp));
+  };
+
+  const selectAllCategory = (category: 'legal' | 'financial', selected: boolean) => {
+    setCheckpoints(prev => prev.map(cp => cp.category === category ? { ...cp, selected } : cp));
+  };
+
   if (!property) return <div className="text-[#2C3E38] p-8">Property not found</div>;
 
+  const legalCheckpoints = checkpoints.filter(cp => cp.category === 'legal');
+  const financialCheckpoints = checkpoints.filter(cp => cp.category === 'financial');
+  const selectedCount = checkpoints.filter(cp => cp.selected).length;
+
   const handleVerify = () => {
+    const selectedCheckpoints = checkpoints.filter(cp => cp.selected);
     addVerificationRequest({
       id: `vr-${Date.now()}`,
       propertyId: property.id,
@@ -57,10 +75,12 @@ export default function PropertyDetails({ propertyId, onBack }: PropertyDetailsP
       assignedRmId: 'rm-1',
       assignedRmName: 'Priya Verma',
       status: 'Submitted',
+      checkpoints: selectedCheckpoints,
       dateSubmitted: new Date().toISOString(),
       dateUpdated: new Date().toISOString(),
     });
     setVerifyModal(false);
+    setCheckpoints(createDefaultCheckpoints());
   };
 
   const handleMaintenance = () => {
@@ -233,12 +253,110 @@ export default function PropertyDetails({ propertyId, onBack }: PropertyDetailsP
         </div>
       </div>
 
-      <Modal isOpen={verifyModal} onClose={() => setVerifyModal(false)} title="Confirm Verification Request">
-        <div className="p-4 space-y-4">
-          <p className="text-[#4A5568]">Proceed with requesting a background verification for {property.title}?</p>
-          <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setVerifyModal(false)} className="px-6 py-2.5 rounded-full border border-[#C7A36A] text-[#2C3E38] font-semibold hover:bg-[#FAF6EF]">Cancel</button>
-            <button onClick={handleVerify} className="px-6 py-2.5 rounded-full bg-[#2C3E38] text-white font-semibold">Confirm</button>
+      <Modal isOpen={verifyModal} onClose={() => setVerifyModal(false)} title="Select Verification Checkpoints" size="lg">
+        <div className="space-y-5">
+          <p className="text-sm text-[#4A5568]">
+            Select which verification checkpoints you'd like for <span className="font-bold text-[#2C3E38]">{property.title}</span>. 
+            Legal checkpoints are reviewed by our <span className="font-semibold text-[#6366f1]">Lawyer</span> and financial checkpoints by our <span className="font-semibold text-[#0891b2]">Chartered Accountant</span>.
+          </p>
+
+          {/* Legal Checkpoints */}
+          <div className="rounded-xl border border-[#6366f1]/20 overflow-hidden">
+            <div className="bg-[#6366f1]/5 px-4 py-3 flex items-center justify-between border-b border-[#6366f1]/20">
+              <div className="flex items-center gap-2">
+                <Scale className="w-4 h-4 text-[#6366f1]" />
+                <span className="text-sm font-bold text-[#2C3E38]">Legal Checkpoints</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[#6366f1]/10 text-[#6366f1] font-medium">→ Lawyer</span>
+              </div>
+              <button
+                onClick={() => {
+                  const allSelected = legalCheckpoints.every(cp => cp.selected);
+                  selectAllCategory('legal', !allSelected);
+                }}
+                className="text-xs font-medium text-[#6366f1] hover:text-[#6366f1]/80 transition-colors"
+              >
+                {legalCheckpoints.every(cp => cp.selected) ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
+            <div className="divide-y divide-[#E8DFD6]/50">
+              {legalCheckpoints.map(cp => (
+                <button
+                  key={cp.id}
+                  onClick={() => toggleCheckpoint(cp.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                    cp.selected ? 'bg-[#6366f1]/5' : 'bg-white hover:bg-[#FAF6EF]'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    cp.selected ? 'bg-[#6366f1] border-[#6366f1]' : 'border-[#E8DFD6]'
+                  }`}>
+                    {cp.selected && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[#2C3E38]">{cp.name}</p>
+                    <p className="text-xs text-[#4A5568]">{cp.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Financial Checkpoints */}
+          <div className="rounded-xl border border-[#0891b2]/20 overflow-hidden">
+            <div className="bg-[#0891b2]/5 px-4 py-3 flex items-center justify-between border-b border-[#0891b2]/20">
+              <div className="flex items-center gap-2">
+                <Calculator className="w-4 h-4 text-[#0891b2]" />
+                <span className="text-sm font-bold text-[#2C3E38]">Financial Checkpoints</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[#0891b2]/10 text-[#0891b2] font-medium">→ Chartered Accountant</span>
+              </div>
+              <button
+                onClick={() => {
+                  const allSelected = financialCheckpoints.every(cp => cp.selected);
+                  selectAllCategory('financial', !allSelected);
+                }}
+                className="text-xs font-medium text-[#0891b2] hover:text-[#0891b2]/80 transition-colors"
+              >
+                {financialCheckpoints.every(cp => cp.selected) ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
+            <div className="divide-y divide-[#E8DFD6]/50">
+              {financialCheckpoints.map(cp => (
+                <button
+                  key={cp.id}
+                  onClick={() => toggleCheckpoint(cp.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                    cp.selected ? 'bg-[#0891b2]/5' : 'bg-white hover:bg-[#FAF6EF]'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    cp.selected ? 'bg-[#0891b2] border-[#0891b2]' : 'border-[#E8DFD6]'
+                  }`}>
+                    {cp.selected && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[#2C3E38]">{cp.name}</p>
+                    <p className="text-xs text-[#4A5568]">{cp.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Summary + Submit */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-[#E8DFD6]">
+            <div className="text-sm text-[#4A5568]">
+              <span className="font-bold text-[#2C3E38]">{selectedCount}</span> of {checkpoints.length} checkpoints selected
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setVerifyModal(false)} className="px-6 py-2.5 rounded-full border border-[#C7A36A] text-[#2C3E38] font-semibold hover:bg-[#FAF6EF]">Cancel</button>
+              <button
+                onClick={handleVerify}
+                disabled={selectedCount === 0}
+                className="px-6 py-2.5 rounded-full bg-[#2C3E38] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send for Verification
+              </button>
+            </div>
           </div>
         </div>
       </Modal>

@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
+import LoginPage from '@/components/auth/LoginPage';
+import RegisterPage from '@/components/auth/RegisterPage';
 import Sidebar from '@/components/layout/Sidebar';
 
 // Admin
@@ -27,14 +30,31 @@ import CustomerChat from '@/components/rm/CustomerChat';
 import AgentDashboard from '@/components/agent/AgentDashboard';
 import UploadProperty from '@/components/agent/UploadProperty';
 
+// Lawyer
+import LawyerDashboard from '@/components/lawyer/LawyerDashboard';
+import LegalReviewWorkflow from '@/components/lawyer/LegalReviewWorkflow';
+
+// Chartered Accountant
+import CADashboard from '@/components/ca/CADashboard';
+import FinancialReviewWorkflow from '@/components/ca/FinancialReviewWorkflow';
+
 export default function Home() {
-  const { currentRole } = useApp();
-  const [activeSection, setActiveSection] = useState(`${currentRole}-dashboard`);
+  const { currentRole, setCurrentRole } = useApp();
+  const { isAuthenticated, isLoading, userRole } = useAuth();
+  const [activeSection, setActiveSection] = useState(currentRole === 'nri' ? 'nri-catalog' : `${currentRole}-dashboard`);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+
+  // Sync currentRole from auth when user logs in
+  useEffect(() => {
+    if (isAuthenticated && userRole) {
+      setCurrentRole(userRole);
+    }
+  }, [isAuthenticated, userRole, setCurrentRole]);
 
   // Reset to dashboard when role changes
   useEffect(() => {
-    setActiveSection(`${currentRole}-dashboard`);
+    setActiveSection(currentRole === 'nri' ? 'nri-catalog' : `${currentRole}-dashboard`);
     setSelectedPropertyId(null);
   }, [currentRole]);
 
@@ -92,10 +112,38 @@ export default function Home() {
       case 'agent-upload':
         return <UploadProperty />;
 
+      // Lawyer
+      case 'lawyer-dashboard':
+        return <LawyerDashboard />;
+      case 'lawyer-reviews':
+        return <LegalReviewWorkflow />;
+
+      // Chartered Accountant
+      case 'ca-dashboard':
+        return <CADashboard />;
+      case 'ca-reviews':
+        return <FinancialReviewWorkflow />;
+
       default:
         return <AdminDashboard />;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#FAF6EF]">
+        <div className="w-10 h-10 border-4 border-[#C7A36A] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return authView === 'login' ? (
+      <LoginPage onSwitchToRegister={() => setAuthView('register')} />
+    ) : (
+      <RegisterPage onSwitchToLogin={() => setAuthView('login')} />
+    );
+  }
 
   return (
     <div className="flex flex-1 relative min-h-screen">

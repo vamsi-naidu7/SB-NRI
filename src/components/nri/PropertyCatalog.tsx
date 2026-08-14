@@ -27,12 +27,23 @@ const formatPrice = (price: number) => {
   );
 };
 
+const formatPriceLabel = (priceStr: string) => {
+  if (!priceStr) return '';
+  const val = parseInt(priceStr, 10);
+  if (isNaN(val)) return priceStr;
+  if (val >= 10000000) return `₹${(val / 10000000).toFixed(1).replace(/\.0$/, '')}Cr`;
+  if (val >= 100000) return `₹${(val / 100000).toFixed(1).replace(/\.0$/, '')}L`;
+  return `₹${val.toLocaleString()}`;
+};
+
 export default function PropertyCatalog({ onViewProperty }: PropertyCatalogProps) {
   const { properties, addVerificationRequest } = useApp();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [propertyType, setPropertyType] = useState('All');
-  const [priceRange, setPriceRange] = useState('All');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [isPriceFilterOpen, setIsPriceFilterOpen] = useState(false);
   const [bedrooms, setBedrooms] = useState('All');
   const [city, setCity] = useState('All');
   
@@ -49,10 +60,8 @@ export default function PropertyCatalog({ onViewProperty }: PropertyCatalogProps
       const matchesCity = city === 'All' || p.city === city;
       
       let matchesPrice = true;
-      if (priceRange === 'Under ₹50L') matchesPrice = p.price < 5000000;
-      else if (priceRange === '₹50L-1Cr') matchesPrice = p.price >= 5000000 && p.price < 10000000;
-      else if (priceRange === '₹1Cr-5Cr') matchesPrice = p.price >= 10000000 && p.price <= 50000000;
-      else if (priceRange === 'Above ₹5Cr') matchesPrice = p.price > 50000000;
+      if (minPrice) matchesPrice = p.price >= parseInt(minPrice, 10);
+      if (matchesPrice && maxPrice) matchesPrice = p.price <= parseInt(maxPrice, 10);
 
       let matchesBeds = true;
       if (bedrooms === '1') matchesBeds = p.bedrooms === 1;
@@ -62,7 +71,7 @@ export default function PropertyCatalog({ onViewProperty }: PropertyCatalogProps
 
       return matchesSearch && matchesType && matchesCity && matchesPrice && matchesBeds;
     });
-  }, [properties, searchTerm, propertyType, priceRange, bedrooms, city]);
+  }, [properties, searchTerm, propertyType, minPrice, maxPrice, bedrooms, city]);
 
   const handleVerify = () => {
     if (verifyingProperty) {
@@ -111,13 +120,63 @@ export default function PropertyCatalog({ onViewProperty }: PropertyCatalogProps
             <option value="Plot">Plot</option>
             <option value="Commercial">Commercial</option>
           </select>
-          <select className="bg-white border border-[#E8DFD6] rounded-xl px-3 py-2.5 text-xs sm:text-sm text-[#2C3E38] focus:outline-none focus:border-[#C7A36A] cursor-pointer shadow-2xs" value={priceRange} onChange={e => setPriceRange(e.target.value)}>
-            <option value="All">All Prices</option>
-            <option value="Under ₹50L">Under ₹50L</option>
-            <option value="₹50L-1Cr">₹50L-1Cr</option>
-            <option value="₹1Cr-5Cr">₹1Cr-5Cr</option>
-            <option value="Above ₹5Cr">Above ₹5Cr</option>
-          </select>
+          <div className="relative">
+            <button 
+              className="w-full bg-white border border-[#E8DFD6] rounded-xl px-3 py-2.5 text-xs sm:text-sm text-[#2C3E38] focus:outline-none focus:border-[#C7A36A] cursor-pointer shadow-2xs flex justify-between items-center"
+              onClick={() => setIsPriceFilterOpen(!isPriceFilterOpen)}
+            >
+              <span className="truncate">
+                {minPrice || maxPrice 
+                  ? `${minPrice ? formatPriceLabel(minPrice) : '0'} - ${maxPrice ? formatPriceLabel(maxPrice) : 'Any'}` 
+                  : 'All Prices'}
+              </span>
+              <ChevronDown className="w-4 h-4 ml-1 text-gray-500 shrink-0" />
+            </button>
+            
+            <AnimatePresence>
+              {isPriceFilterOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute z-10 top-full left-0 mt-2 w-64 bg-white border border-[#E8DFD6] rounded-xl shadow-lg p-4"
+                >
+                  <div className="text-xs font-semibold text-[#4A5568] mb-2">Price Range (₹)</div>
+                  <div className="flex gap-2 items-center mb-4">
+                    <input 
+                      type="number" 
+                      placeholder="Min"
+                      value={minPrice}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                      className="w-full border border-[#E8DFD6] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#C7A36A]"
+                    />
+                    <span className="text-gray-500">-</span>
+                    <input 
+                      type="number" 
+                      placeholder="Max"
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                      className="w-full border border-[#E8DFD6] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#C7A36A]"
+                    />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <button 
+                      onClick={() => { setMinPrice(''); setMaxPrice(''); setIsPriceFilterOpen(false); }}
+                      className="text-sm text-[#4A5568] hover:text-[#2C3E38] px-2"
+                    >
+                      Clear
+                    </button>
+                    <button 
+                      onClick={() => setIsPriceFilterOpen(false)}
+                      className="text-sm bg-[#2C3E38] text-white px-4 py-1.5 rounded-lg hover:bg-[#2C3E38]/90"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <select className="bg-white border border-[#E8DFD6] rounded-xl px-3 py-2.5 text-xs sm:text-sm text-[#2C3E38] focus:outline-none focus:border-[#C7A36A] cursor-pointer shadow-2xs" value={bedrooms} onChange={e => setBedrooms(e.target.value)}>
             <option value="All">All Beds</option>
             <option value="1">1 Bed</option>

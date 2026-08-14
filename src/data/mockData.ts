@@ -1,4 +1,4 @@
-import { Property, VerificationRequest, MaintenanceRequest, LeaseRequest, Notification, ChatMessage, ActivityLog } from '@/types';
+import { Property, VerificationRequest, MaintenanceRequest, LeaseRequest, Notification, ChatMessage, ActivityLog, VerificationCheckpoint } from '@/types';
 
 export const mockProperties: Property[] = [
   {
@@ -203,6 +203,28 @@ export const mockProperties: Property[] = [
   },
 ];
 
+// Helper to generate checkpoint sets with specific statuses for mock data
+function makeMockCheckpoints(overrides: Partial<Record<string, { status: VerificationCheckpoint['status']; reviewerName?: string; reviewComments?: string; reviewDate?: string }>>): VerificationCheckpoint[] {
+  const base: Omit<VerificationCheckpoint, 'id'>[] = [
+    { category: 'legal', name: 'Title Deed Verification', description: 'Verify ownership history, chain of title, and clear title status', assignedTo: 'lawyer', status: 'pending', selected: true },
+    { category: 'legal', name: 'Encumbrance Certificate Check', description: 'Confirm no mortgages, liens, or legal disputes on the property', assignedTo: 'lawyer', status: 'pending', selected: true },
+    { category: 'legal', name: 'Land Use & Zoning Compliance', description: 'Verify DTCP/CMDA approvals, zoning rules, and land-use classification', assignedTo: 'lawyer', status: 'pending', selected: true },
+    { category: 'legal', name: 'Litigation & Dispute Check', description: 'Search court records for pending or past litigation involving the property', assignedTo: 'lawyer', status: 'pending', selected: true },
+    { category: 'legal', name: 'Power of Attorney Verification', description: 'If applicable, validate PoA documents for NRI transactions', assignedTo: 'lawyer', status: 'pending', selected: true },
+    { category: 'legal', name: 'Sale Agreement Review', description: 'Draft review and legal opinion on the sale/purchase agreement', assignedTo: 'lawyer', status: 'pending', selected: true },
+    { category: 'financial', name: 'Property Valuation Assessment', description: 'Independent fair market value assessment and comparison', assignedTo: 'ca', status: 'pending', selected: true },
+    { category: 'financial', name: 'Tax Compliance Check', description: 'Verify property tax payments, arrears, and municipal dues', assignedTo: 'ca', status: 'pending', selected: true },
+    { category: 'financial', name: 'TDS & Capital Gains Advisory', description: 'Calculate TDS obligations and capital gains tax implications for NRI', assignedTo: 'ca', status: 'pending', selected: true },
+    { category: 'financial', name: 'FEMA Compliance Review', description: 'Verify compliance with Foreign Exchange Management Act for NRI buyers', assignedTo: 'ca', status: 'pending', selected: true },
+    { category: 'financial', name: 'Stamp Duty & Registration Cost Estimate', description: 'Provide stamp duty calculation and registration cost breakdown', assignedTo: 'ca', status: 'pending', selected: true },
+    { category: 'financial', name: 'Rental Income Tax Planning', description: 'If buying for lease, provide tax-optimized rental income structure', assignedTo: 'ca', status: 'pending', selected: true },
+  ];
+  return base.map((cp, idx) => {
+    const override = overrides[cp.name];
+    return { ...cp, id: `cp-mock-${idx}`, ...(override || {}) };
+  });
+}
+
 export const mockVerificationRequests: VerificationRequest[] = [
   {
     id: 'vr-1',
@@ -221,6 +243,20 @@ export const mockVerificationRequests: VerificationRequest[] = [
     verificationReportPdf: 'https://example.com/report1.pdf',
     rmImages: ['https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800'],
     rmComments: 'All structural and legal documents verified. Highly recommended purchase.',
+    checkpoints: makeMockCheckpoints({
+      'Title Deed Verification': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'Clear title with unbroken chain of ownership since 1998.', reviewDate: '2024-03-05T10:00:00Z' },
+      'Encumbrance Certificate Check': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'No encumbrances found for the past 30 years.', reviewDate: '2024-03-05T11:00:00Z' },
+      'Land Use & Zoning Compliance': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'Compliant with residential zoning regulations.', reviewDate: '2024-03-06T09:00:00Z' },
+      'Litigation & Dispute Check': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'No pending or past litigation found.', reviewDate: '2024-03-06T10:00:00Z' },
+      'Power of Attorney Verification': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'PoA properly notarized and apostilled.', reviewDate: '2024-03-06T14:00:00Z' },
+      'Sale Agreement Review': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'Standard agreement with fair terms. No red flags.', reviewDate: '2024-03-07T10:00:00Z' },
+      'Property Valuation Assessment': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'Fair market value assessed at ₹5.2 Cr. Price is competitive.', reviewDate: '2024-03-05T14:00:00Z' },
+      'Tax Compliance Check': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'All property taxes paid up to date.', reviewDate: '2024-03-06T11:00:00Z' },
+      'TDS & Capital Gains Advisory': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'TDS at 20% applicable. LTCG with indexation is favorable.', reviewDate: '2024-03-07T09:00:00Z' },
+      'FEMA Compliance Review': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'Residential property — NRI purchase compliant under FEMA.', reviewDate: '2024-03-07T11:00:00Z' },
+      'Stamp Duty & Registration Cost Estimate': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'Stamp duty: ₹33L (6%). Registration: ₹1.65L (1%). Total: ~₹34.65L.', reviewDate: '2024-03-08T10:00:00Z' },
+      'Rental Income Tax Planning': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'Recommended HUF structure for tax optimization on rental income.', reviewDate: '2024-03-08T14:00:00Z' },
+    }),
     dateSubmitted: '2024-03-01T10:00:00Z',
     dateUpdated: '2024-03-10T14:30:00Z',
   },
@@ -246,6 +282,14 @@ export const mockVerificationRequests: VerificationRequest[] = [
     assignedRmId: 'rm-2',
     assignedRmName: 'Sneha Kapoor',
     status: 'Verification In Progress',
+    checkpoints: makeMockCheckpoints({
+      'Title Deed Verification': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'Title is clear. Builder has proper RERA registration.', reviewDate: '2024-03-14T10:00:00Z' },
+      'Encumbrance Certificate Check': { status: 'in-review', reviewerName: 'Adv. Meenakshi Iyer' },
+      'Land Use & Zoning Compliance': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'Proper BDA approvals in place.', reviewDate: '2024-03-14T14:00:00Z' },
+      'Property Valuation Assessment': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'Market value consistent with asking price.', reviewDate: '2024-03-14T11:00:00Z' },
+      'Tax Compliance Check': { status: 'in-review', reviewerName: 'CA Suresh Rajan' },
+      'FEMA Compliance Review': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'FEMA compliant for NRI residential purchase.', reviewDate: '2024-03-15T09:00:00Z' },
+    }),
     dateSubmitted: '2024-03-12T11:00:00Z',
     dateUpdated: '2024-03-13T09:00:00Z',
   },
@@ -262,6 +306,7 @@ export const mockVerificationRequests: VerificationRequest[] = [
     assignedRmId: 'rm-1',
     assignedRmName: 'Rahul Verma',
     status: 'Assigned',
+    checkpoints: makeMockCheckpoints({}),
     dateSubmitted: '2024-03-18T08:45:00Z',
     dateUpdated: '2024-03-18T10:15:00Z',
   },
@@ -290,6 +335,20 @@ export const mockVerificationRequests: VerificationRequest[] = [
     recommendation: 'Recommended with Conditions',
     verificationReportPdf: 'https://example.com/report4.pdf',
     rmComments: 'Property tax has minor arrears that seller agreed to clear before registration. Otherwise sound.',
+    checkpoints: makeMockCheckpoints({
+      'Title Deed Verification': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'Title clear. Proper patta transfer done.', reviewDate: '2024-02-18T10:00:00Z' },
+      'Encumbrance Certificate Check': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'No encumbrances.', reviewDate: '2024-02-18T11:00:00Z' },
+      'Land Use & Zoning Compliance': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'CMDA approved layout.', reviewDate: '2024-02-19T09:00:00Z' },
+      'Litigation & Dispute Check': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'No litigation found.', reviewDate: '2024-02-19T10:00:00Z' },
+      'Power of Attorney Verification': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'PoA valid.', reviewDate: '2024-02-20T09:00:00Z' },
+      'Sale Agreement Review': { status: 'approved', reviewerName: 'Adv. Meenakshi Iyer', reviewComments: 'Agreement terms acceptable.', reviewDate: '2024-02-20T14:00:00Z' },
+      'Property Valuation Assessment': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'Valued at ₹1.8Cr — fair price.', reviewDate: '2024-02-18T14:00:00Z' },
+      'Tax Compliance Check': { status: 'flagged', reviewerName: 'CA Suresh Rajan', reviewComments: 'Property tax arrears of ₹45,000 pending. Seller must clear before registration.', reviewDate: '2024-02-19T11:00:00Z' },
+      'TDS & Capital Gains Advisory': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'TDS at 20% + surcharge. DTAA relief available for US-based NRI.', reviewDate: '2024-02-20T10:00:00Z' },
+      'FEMA Compliance Review': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'FEMA compliant.', reviewDate: '2024-02-20T11:00:00Z' },
+      'Stamp Duty & Registration Cost Estimate': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'Stamp duty: ₹12.6L. Registration: ₹1.8L.', reviewDate: '2024-02-21T10:00:00Z' },
+      'Rental Income Tax Planning': { status: 'approved', reviewerName: 'CA Suresh Rajan', reviewComments: 'Standard 30% deduction applicable.', reviewDate: '2024-02-21T14:00:00Z' },
+    }),
     dateSubmitted: '2024-02-15T09:00:00Z',
     dateUpdated: '2024-02-28T16:30:00Z',
   }

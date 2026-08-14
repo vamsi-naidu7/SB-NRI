@@ -1,0 +1,205 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                   String                @id @default(uuid())
+  name                 String
+  email                String                @unique
+  role                 String                // 'admin', 'nri', 'rm', 'agent'
+  contact              String?
+  createdAt            DateTime              @default(now())
+  
+  // Relations
+  propertiesListed     Property[]            @relation("AgentProperties")
+  verificationRequests VerificationRequest[] @relation("NRIVerifications")
+  assignedVerifications VerificationRequest[] @relation("RMVerifications")
+  maintenanceRequests  MaintenanceRequest[]  @relation("NRIMaintenances")
+  assignedMaintenances MaintenanceRequest[]  @relation("RMMaintenances")
+  leaseRequests        LeaseRequest[]        @relation("NRILeases")
+  assignedLeases       LeaseRequest[]        @relation("RMLeases")
+}
+
+model Property {
+  id                   String                @id @default(uuid())
+  title                String
+  type                 String                // 'Apartment', 'Villa', 'Plot', 'Commercial'
+  price                Float
+  currency             String                @default("INR")
+  address              String
+  city                 String
+  state                String
+  pincode              String
+  googleMapUrl         String?
+  description          String?
+  images               String[]
+  videos               String[]
+  plotAreaSqFt         Float?
+  builtUpAreaSqFt      Float?
+  bedrooms             Int?
+  bathrooms            Int?
+  amenities            String[]
+  
+  // Owner Details (flattened for simplicity, or could be a relation)
+  ownerName            String?
+  ownerContact         String?
+  ownerEmail           String?
+  
+  status               String                @default("Draft") // 'Draft', 'Listed', 'Verification In Progress', 'Sold'
+  createdAt            DateTime              @default(now())
+
+  // Relations
+  agentId              String
+  agent                User                  @relation("AgentProperties", fields: [agentId], references: [id])
+  
+  verificationRequests VerificationRequest[]
+  maintenanceRequests  MaintenanceRequest[]
+  leaseRequests        LeaseRequest[]
+}
+
+model VerificationRequest {
+  id                   String                @id @default(uuid())
+  isExternal           Boolean               @default(false)
+  
+  // If internal property
+  propertyId           String?
+  property             Property?             @relation(fields: [propertyId], references: [id])
+  
+  // If external property
+  outTitle             String?
+  outAddress           String?
+  outCity              String?
+  outSellerName        String?
+  outSellerContact     String?
+  outSellerEmail       String?
+  outImages            String[]
+  outNotes             String?
+  
+  status               String                @default("Submitted") // 'Submitted', 'Assigned', 'Verification In Progress', 'Report Uploaded', 'Completed'
+  recommendation       String?               // 'Recommended', 'Recommended with Conditions', 'Not Recommended'
+  verificationReportPdf String?
+  rmImages             String[]
+  rmComments           String?
+  
+  dateSubmitted        DateTime              @default(now())
+  dateUpdated          DateTime              @updatedAt
+
+  // Relations
+  nriId                String
+  nri                  User                  @relation("NRIVerifications", fields: [nriId], references: [id])
+  assignedRmId         String?
+  assignedRm           User?                 @relation("RMVerifications", fields: [assignedRmId], references: [id])
+}
+
+model MaintenanceRequest {
+  id                   String                @id @default(uuid())
+  requirements         String
+  status               String                @default("Requested") // 'Requested', 'Active', 'Monthly Inspection Completed', 'Issue Reported', 'Completed'
+  createdAt            DateTime              @default(now())
+
+  // Relations
+  propertyId           String
+  property             Property              @relation(fields: [propertyId], references: [id])
+  nriId                String
+  nri                  User                  @relation("NRIMaintenances", fields: [nriId], references: [id])
+  assignedRmId         String?
+  assignedRm           User?                 @relation("RMMaintenances", fields: [assignedRmId], references: [id])
+  
+  monthlyInspections   MonthlyInspection[]
+  emergencyInspections EmergencyInspection[]
+}
+
+model MonthlyInspection {
+  id                   String                @id @default(uuid())
+  month                String
+  date                 DateTime
+  photos               String[]
+  videos               String[]
+  reportPdf            String?
+  comments             String?
+
+  maintenanceRequestId String
+  maintenanceRequest   MaintenanceRequest    @relation(fields: [maintenanceRequestId], references: [id])
+}
+
+model EmergencyInspection {
+  id                   String                @id @default(uuid())
+  date                 DateTime
+  issueTitle           String
+  issueDetails         String
+  photos               String[]
+  repairRecommendation String?
+  estimatedCost        Float?
+  status               String                @default("Reported") // 'Reported', 'In Progress', 'Resolved'
+
+  maintenanceRequestId String
+  maintenanceRequest   MaintenanceRequest    @relation(fields: [maintenanceRequestId], references: [id])
+}
+
+model LeaseRequest {
+  id                   String                @id @default(uuid())
+  leaseDurationMonths  Int
+  expectedMonthlyRent  Float
+  specialConditions    String?
+  occupancyType        String                // 'Long Term Rental', 'Serviced Apartment', 'Airbnb / Short Term'
+  agreementCopyPdf     String?
+  status               String                @default("Requested") // 'Requested', 'Agreement Pending', 'Active', 'Renewal Due', 'Renewed', 'Closed'
+  createdAt            DateTime              @default(now())
+
+  // Relations
+  propertyId           String
+  property             Property              @relation(fields: [propertyId], references: [id])
+  nriId                String
+  nri                  User                  @relation("NRILeases", fields: [nriId], references: [id])
+  assignedRmId         String?
+  assignedRm           User?                 @relation("RMLeases", fields: [assignedRmId], references: [id])
+  
+  monthlyRentPayouts   RentPayout[]
+}
+
+model RentPayout {
+  id                   String                @id @default(uuid())
+  month                String
+  amount               Float
+  status               String                @default("Pending") // 'Paid', 'Pending'
+  payoutDate           DateTime
+
+  leaseRequestId       String
+  leaseRequest         LeaseRequest          @relation(fields: [leaseRequestId], references: [id])
+}
+
+model Notification {
+  id                   String                @id @default(uuid())
+  title                String
+  message              String
+  type                 String                // 'info', 'success', 'warning', 'error'
+  role                 String                // Target role: 'admin', 'nri', 'rm', 'agent'
+  userId               String?               // Optional specific user target
+  read                 Boolean               @default(false)
+  createdAt            DateTime              @default(now())
+}
+
+model ActivityLog {
+  id                   String                @id @default(uuid())
+  action               String
+  description          String
+  user                 String
+  role                 String
+  timestamp            DateTime              @default(now())
+}
+
+model ChatMessage {
+  id                   String                @id @default(uuid())
+  senderId             String
+  senderName           String
+  senderRole           String
+  receiverId           String
+  receiverName         String
+  message              String
+  timestamp            DateTime              @default(now())
+}

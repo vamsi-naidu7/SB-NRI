@@ -18,7 +18,9 @@ import {
   Building2,
   PlusCircle,
   X,
-  ShieldCheck
+  ShieldCheck,
+  Scale,
+  Calculator
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -40,8 +42,8 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
         ];
       case 'nri':
         return [
-          { id: 'nri-dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'nri-catalog', label: 'Property Catalog', icon: Search },
+          { id: 'nri-dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'nri-verifications', label: 'My Verifications', icon: FileCheck },
           { id: 'nri-maintenance', label: 'Maintenance', icon: Wrench },
           { id: 'nri-leases', label: 'Leases', icon: FileText },
@@ -60,6 +62,16 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           { id: 'agent-dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'agent-listings', label: 'My Listings', icon: Building2 },
           { id: 'agent-upload', label: 'Upload Property', icon: PlusCircle },
+        ];
+      case 'lawyer':
+        return [
+          { id: 'lawyer-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'lawyer-reviews', label: 'Legal Reviews', icon: Scale },
+        ];
+      case 'ca':
+        return [
+          { id: 'ca-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'ca-reviews', label: 'Financial Reviews', icon: Calculator },
         ];
       default:
         return [];

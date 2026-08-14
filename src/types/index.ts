@@ -1,4 +1,20 @@
-export type UserRole = 'admin' | 'nri' | 'rm' | 'agent';
+export type UserRole = 'admin' | 'nri' | 'rm' | 'agent' | 'lawyer' | 'ca';
+
+export type CheckpointCategory = 'legal' | 'financial';
+export type CheckpointStatus = 'pending' | 'in-review' | 'approved' | 'flagged';
+
+export interface VerificationCheckpoint {
+  id: string;
+  category: CheckpointCategory;
+  name: string;
+  description: string;
+  assignedTo: 'lawyer' | 'ca';
+  status: CheckpointStatus;
+  selected: boolean;
+  reviewerName?: string;
+  reviewComments?: string;
+  reviewDate?: string;
+}
 
 export interface Property {
   id: string;
@@ -54,6 +70,7 @@ export interface VerificationRequest {
   verificationReportPdf?: string;
   rmImages?: string[];
   rmComments?: string;
+  checkpoints?: VerificationCheckpoint[];
   dateSubmitted: string;
   dateUpdated: string;
 }
