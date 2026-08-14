@@ -10,6 +10,7 @@ import {
   Notification,
   ChatMessage,
   ActivityLog,
+  DocumentRequest,
 } from '@/types';
 import {
   mockProperties,
@@ -19,6 +20,7 @@ import {
   mockNotifications,
   mockActivityLogs,
   mockChatMessages,
+  mockDocumentRequests,
 } from '@/data/mockData';
 import { apiClient } from '@/lib/api';
 import { propertyService } from '@/lib/services/propertyService';
@@ -58,6 +60,9 @@ interface AppContextType {
   addChatMessage: (message: ChatMessage) => void;
   activityLogs: ActivityLog[];
   addActivityLog: (log: ActivityLog) => void;
+  documentRequests: DocumentRequest[];
+  addDocumentRequest: (request: DocumentRequest) => void;
+  updateDocumentRequest: (id: string, updates: Partial<DocumentRequest>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -72,6 +77,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [documentRequests, setDocumentRequests] = useState<DocumentRequest[]>([]);
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
@@ -103,9 +109,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           if (dbLeases.length > 0) setLeaseRequests(dbLeases.map(mapBackendLease));
           else setLeaseRequests(mockLeaseRequests);
 
-          // Notifications, chat, activity logs - keep mock for now
+          // Notifications, chat, activity logs, document requests - keep mock for now
           setNotifications(mockNotifications);
           setChatMessages(mockChatMessages);
+          setDocumentRequests(mockDocumentRequests);
           setActivityLogs(mockActivityLogs);
         } catch (error) {
           console.warn('Failed to load from API, using mock data');
@@ -116,6 +123,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           setNotifications(mockNotifications);
           setChatMessages(mockChatMessages);
           setActivityLogs(mockActivityLogs);
+          setDocumentRequests(mockDocumentRequests);
         }
       } else {
         // Not authenticated - use mock data for preview
@@ -126,6 +134,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setNotifications(mockNotifications);
         setChatMessages(mockChatMessages);
         setActivityLogs(mockActivityLogs);
+        setDocumentRequests(mockDocumentRequests);
       }
     };
 
@@ -183,6 +192,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const markNotificationRead = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   const addChatMessage = (message: ChatMessage) => setChatMessages(prev => [...prev, message]);
   const addActivityLog = (log: ActivityLog) => setActivityLogs(prev => [log, ...prev]);
+  const addDocumentRequest = (request: DocumentRequest) => setDocumentRequests(prev => [request, ...prev]);
+  const updateDocumentRequest = (id: string, updates: Partial<DocumentRequest>) => setDocumentRequests(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
 
   const value: AppContextType = {
     currentRole, setCurrentRole,
@@ -193,7 +204,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     leaseRequests, addLeaseRequest, updateLeaseRequest,
     notifications, addNotification, markNotificationRead,
     chatMessages, addChatMessage,
-    activityLogs, addActivityLog
+    activityLogs, addActivityLog,
+    documentRequests, addDocumentRequest, updateDocumentRequest,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -62,6 +62,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           { id: 'agent-dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'agent-listings', label: 'My Listings', icon: Building2 },
           { id: 'agent-upload', label: 'Upload Property', icon: PlusCircle },
+          { id: 'agent-documents', label: 'Document Requests', icon: FileText },
         ];
       case 'lawyer':
         return [

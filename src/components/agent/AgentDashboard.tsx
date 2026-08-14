@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Home, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Home, CheckCircle, Clock, FileText } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import StatusBadge from '@/components/ui/StatusBadge';
 
 export default function AgentDashboard() {
-  const { properties, verificationRequests } = useApp();
+  const { properties, verificationRequests, documentRequests } = useApp();
   const [filter, setFilter] = useState<'All' | 'Draft' | 'Listed' | 'Verification In Progress' | 'Sold'>('All');
   
   const agentId = 'agent-1';
@@ -16,6 +16,7 @@ export default function AgentDashboard() {
   // Count verification requests for agent's properties
   const agentPropIds = myProperties.map(p => p.id);
   const vReqCount = verificationRequests.filter(vr => vr.propertyId && agentPropIds.includes(vr.propertyId)).length;
+  const pendingDocRequests = documentRequests.filter(dr => dr.targetAgentId === agentId && dr.status === 'Pending').length;
   
   const filteredProperties = filter === 'All' 
     ? myProperties 
@@ -35,11 +36,12 @@ export default function AgentDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { title: "My Listings", value: myProperties.length, icon: Home },
           { title: "Listed Properties", value: listedCount, icon: CheckCircle },
           { title: "Verification Requests", value: vReqCount, icon: Clock },
+          { title: "Document Requests", value: pendingDocRequests, icon: FileText },
         ].map((stat, idx) => (
           <div key={idx} className="bg-white shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-[#E8DFD6]/50 rounded-2xl p-4 sm:p-6 flex items-center gap-4">
             <div className="p-3 sm:p-4 bg-[#C7A36A]/10 rounded-xl text-[#C7A36A] shrink-0">

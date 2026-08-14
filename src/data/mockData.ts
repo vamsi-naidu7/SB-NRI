@@ -1,4 +1,4 @@
-import { Property, VerificationRequest, MaintenanceRequest, LeaseRequest, Notification, ChatMessage, ActivityLog, VerificationCheckpoint } from '@/types';
+import { Property, VerificationRequest, MaintenanceRequest, LeaseRequest, Notification, ChatMessage, ActivityLog, VerificationCheckpoint, DocumentRequest } from '@/types';
 
 export const mockProperties: Property[] = [
   {
@@ -559,4 +559,73 @@ export const mockActivityLogs: ActivityLog[] = [
   { id: 'log-10', action: 'Document Download', description: 'Downloaded Verification Report for VR-1', user: 'Arjun Patel', role: 'nri', timestamp: '2024-03-11T09:20:00Z' },
   { id: 'log-11', action: 'System Backup', description: 'Automated daily backup completed successfully', user: 'System', role: 'admin', timestamp: '2024-03-24T00:00:00Z' },
   { id: 'log-12', action: 'User Created', description: 'Created new RM account for Rahul Verma', user: 'Admin User', role: 'admin', timestamp: '2023-10-01T10:00:00Z' }
+];
+
+export const mockDocumentRequests: DocumentRequest[] = [
+  {
+    id: 'dr-1',
+    propertyId: 'prop-3',
+    propertyTitle: 'Hiranandani Gardens Estate',
+    requestedBy: 'lawyer-1',
+    requestedByName: 'Adv. Meenakshi Iyer',
+    requestedByRole: 'lawyer',
+    targetAgentId: 'agent-1',
+    targetAgentName: 'Vikram Singh',
+    documentType: 'Title Deed',
+    description: 'Need the original title deed copy for legal verification of ownership chain. Please upload a scanned color copy.',
+    status: 'Uploaded',
+    uploadedFileUrl: 'https://example.com/docs/title-deed-prop3.pdf',
+    uploadedFileName: 'Title_Deed_Hiranandani.pdf',
+    agentNotes: 'Here is the scanned copy from the original registered document.',
+    createdAt: '2024-03-02T10:00:00Z',
+    updatedAt: '2024-03-03T14:30:00Z',
+  },
+  {
+    id: 'dr-2',
+    propertyId: 'prop-3',
+    propertyTitle: 'Hiranandani Gardens Estate',
+    requestedBy: 'ca-1',
+    requestedByName: 'CA Suresh Rajan',
+    requestedByRole: 'ca',
+    targetAgentId: 'agent-1',
+    targetAgentName: 'Vikram Singh',
+    documentType: 'Property Tax Receipts',
+    description: 'Please provide the last 3 years of property tax payment receipts for tax compliance verification.',
+    status: 'Pending',
+    createdAt: '2024-03-06T09:00:00Z',
+    updatedAt: '2024-03-06T09:00:00Z',
+  },
+  {
+    id: 'dr-3',
+    propertyId: 'prop-1',
+    propertyTitle: 'Luxury Sea View Villa, ECR',
+    requestedBy: 'lawyer-1',
+    requestedByName: 'Adv. Meenakshi Iyer',
+    requestedByRole: 'lawyer',
+    targetAgentId: 'agent-1',
+    targetAgentName: 'Vikram Singh',
+    documentType: 'Encumbrance Certificate',
+    description: 'Need EC for the last 30 years for the ECR villa property. This is required to verify no pending liens or mortgages.',
+    status: 'Pending',
+    createdAt: '2024-03-19T11:00:00Z',
+    updatedAt: '2024-03-19T11:00:00Z',
+  },
+  {
+    id: 'dr-4',
+    propertyId: 'prop-2',
+    propertyTitle: 'Prestige Shantiniketan Apartment',
+    requestedBy: 'ca-1',
+    requestedByName: 'CA Suresh Rajan',
+    requestedByRole: 'ca',
+    targetAgentId: 'agent-2',
+    targetAgentName: 'Anita Desai',
+    documentType: 'Stamp Duty Payment Receipt',
+    description: 'Require the stamp duty payment receipt for computing total acquisition cost and capital gains advisory.',
+    status: 'Uploaded',
+    uploadedFileUrl: 'https://example.com/docs/stamp-duty-prop2.pdf',
+    uploadedFileName: 'Stamp_Duty_Prestige.pdf',
+    agentNotes: 'Receipt from Sub-Registrar office attached.',
+    createdAt: '2024-02-20T08:00:00Z',
+    updatedAt: '2024-02-22T16:00:00Z',
+  },
 ];

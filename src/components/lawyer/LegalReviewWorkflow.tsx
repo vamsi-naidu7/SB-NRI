@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Scale, CheckCircle, AlertTriangle, Clock, Eye, MapPin, MessageSquare, Send } from 'lucide-react';
+import { Scale, CheckCircle, AlertTriangle, Clock, Eye, MapPin, MessageSquare, Send, FileUp } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Modal from '@/components/ui/Modal';
@@ -29,13 +29,22 @@ const statusColor = (status: VerificationCheckpoint['status']) => {
 };
 
 export default function LegalReviewWorkflow() {
-  const { verificationRequests, updateVerificationRequest, addNotification, addActivityLog } = useApp();
+  const { verificationRequests, updateVerificationRequest, addNotification, addActivityLog, properties, addDocumentRequest } = useApp();
   const [activeTab, setActiveTab] = useState('All');
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedReqId, setSelectedReqId] = useState<string | null>(null);
   const [selectedCheckpointId, setSelectedCheckpointId] = useState<string | null>(null);
   const [reviewComments, setReviewComments] = useState('');
   const [reviewDecision, setReviewDecision] = useState<'approved' | 'flagged' | null>(null);
+
+  // Document request modal state
+  const [docReqModalOpen, setDocReqModalOpen] = useState(false);
+  const [docReqPropertyId, setDocReqPropertyId] = useState<string | null>(null);
+  const [docReqPropertyTitle, setDocReqPropertyTitle] = useState('');
+  const [docReqAgentId, setDocReqAgentId] = useState('');
+  const [docReqAgentName, setDocReqAgentName] = useState('');
+  const [docReqType, setDocReqType] = useState('');
+  const [docReqDescription, setDocReqDescription] = useState('');
 
   // Filter only requests with legal checkpoints
   const relevantRequests = verificationRequests.filter(vr =>
@@ -93,6 +102,61 @@ export default function LegalReviewWorkflow() {
     });
 
     setReviewModalOpen(false);
+  };
+
+  const openDocReqModal = (req: typeof verificationRequests[0]) => {
+    setDocReqPropertyId(req.propertyId || null);
+    setDocReqPropertyTitle(req.propertyTitle);
+    // Try to find agent from property
+    const prop = req.propertyId ? properties.find(p => p.id === req.propertyId) : null;
+    setDocReqAgentId(prop?.agentId || 'agent-1');
+    setDocReqAgentName(prop?.agentName || 'Vikram Singh');
+    setDocReqType('');
+    setDocReqDescription('');
+    setDocReqModalOpen(true);
+  };
+
+  const submitDocumentRequest = () => {
+    if (!docReqType || !docReqDescription.trim()) return;
+
+    const newRequest = {
+      id: `dr-${Date.now()}`,
+      propertyId: docReqPropertyId || '',
+      propertyTitle: docReqPropertyTitle,
+      requestedBy: 'lawyer-1',
+      requestedByName: 'Adv. Meenakshi Iyer',
+      requestedByRole: 'lawyer' as const,
+      targetAgentId: docReqAgentId,
+      targetAgentName: docReqAgentName,
+      documentType: docReqType,
+      description: docReqDescription,
+      status: 'Pending' as const,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    addDocumentRequest(newRequest);
+
+    addNotification({
+      id: `notif-${Date.now()}`,
+      title: 'Document Request',
+      message: `${docReqType} requested by Adv. Meenakshi Iyer for ${docReqPropertyTitle}.`,
+      type: 'info',
+      role: 'agent',
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    addActivityLog({
+      id: `log-${Date.now()}`,
+      action: 'DOCUMENT_REQUESTED',
+      description: `Lawyer requested "${docReqType}" from agent ${docReqAgentName} for ${docReqPropertyTitle}`,
+      user: 'Adv. Meenakshi Iyer',
+      role: 'lawyer',
+      timestamp: new Date().toISOString(),
+    });
+
+    setDocReqModalOpen(false);
   };
 
   return (
@@ -223,6 +287,16 @@ export default function LegalReviewWorkflow() {
                     ))}
                   </div>
                 </div>
+                {/* Request Document Button */}
+                <div className="mt-4 pt-3 border-t border-[#E8DFD6]/50">
+                  <button
+                    onClick={() => openDocReqModal(req)}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#6366f1]/10 hover:bg-[#6366f1]/20 text-[#6366f1] rounded-xl text-sm font-medium transition-colors border border-[#6366f1]/20"
+                  >
+                    <FileUp className="w-4 h-4" />
+                    Request Document from Agent
+                  </button>
+                </div>
               </motion.div>
             );
           })}
@@ -303,6 +377,58 @@ export default function LegalReviewWorkflow() {
               </>
             );
           })()}
+        </div>
+      </Modal>
+
+      {/* Document Request Modal */}
+      <Modal isOpen={docReqModalOpen} onClose={() => setDocReqModalOpen(false)} title="Request Document from Agent">
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-[#6366f1]/5 border border-[#6366f1]/20">
+            <p className="text-sm font-bold text-[#2C3E38]">Property: {docReqPropertyTitle}</p>
+            <p className="text-xs text-[#4A5568] mt-1">Agent: <span className="font-medium text-[#2C3E38]">{docReqAgentName}</span></p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#2C3E38] mb-1">Document Type *</label>
+            <select
+              value={docReqType}
+              onChange={e => setDocReqType(e.target.value)}
+              className="w-full bg-white border border-[#E8DFD6] rounded-xl px-4 py-3 text-[#2C3E38] focus:outline-none focus:border-[#6366f1] appearance-none"
+            >
+              <option value="">Select document type...</option>
+              <option value="Title Deed">Title Deed</option>
+              <option value="Sale Agreement">Sale Agreement</option>
+              <option value="Encumbrance Certificate">Encumbrance Certificate</option>
+              <option value="DTCP/CMDA Approval">DTCP/CMDA Approval</option>
+              <option value="Patta / Chitta">Patta / Chitta</option>
+              <option value="Power of Attorney">Power of Attorney</option>
+              <option value="Building Plan Approval">Building Plan Approval</option>
+              <option value="Completion Certificate">Completion Certificate</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#2C3E38] mb-1">Description / Message *</label>
+            <textarea
+              value={docReqDescription}
+              onChange={e => setDocReqDescription(e.target.value)}
+              className="w-full bg-white border border-[#E8DFD6] rounded-xl px-4 py-3 text-[#2C3E38] focus:outline-none focus:border-[#6366f1] h-28 resize-none"
+              placeholder="Describe what you need and why (e.g., 'Need the original title deed for ownership chain verification')..."
+            />
+          </div>
+
+          <div className="pt-4 flex justify-end gap-3">
+            <button onClick={() => setDocReqModalOpen(false)} className="px-6 py-2 text-[#4A5568] hover:text-[#2C3E38] transition-colors font-medium">Cancel</button>
+            <button
+              onClick={submitDocumentRequest}
+              disabled={!docReqType || !docReqDescription.trim()}
+              className="px-6 py-2 bg-[#6366f1] hover:bg-[#6366f1]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full font-medium transition-colors flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+              Send Request
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

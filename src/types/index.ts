@@ -170,3 +170,24 @@ export interface ActivityLog {
   role: UserRole;
   timestamp: string;
 }
+
+export type DocumentRequestStatus = 'Pending' | 'Uploaded' | 'Rejected';
+
+export interface DocumentRequest {
+  id: string;
+  propertyId: string;
+  propertyTitle: string;
+  requestedBy: string;
+  requestedByName: string;
+  requestedByRole: 'lawyer' | 'ca';
+  targetAgentId: string;
+  targetAgentName: string;
+  documentType: string;
+  description: string;
+  status: DocumentRequestStatus;
+  uploadedFileUrl?: string;
+  uploadedFileName?: string;
+  agentNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}

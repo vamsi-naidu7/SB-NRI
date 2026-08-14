@@ -29,6 +29,7 @@ import CustomerChat from '@/components/rm/CustomerChat';
 // Agent
 import AgentDashboard from '@/components/agent/AgentDashboard';
 import UploadProperty from '@/components/agent/UploadProperty';
+import DocumentRequests from '@/components/agent/DocumentRequests';
 
 // Lawyer
 import LawyerDashboard from '@/components/lawyer/LawyerDashboard';
@@ -111,6 +112,8 @@ export default function Home() {
         return <AgentDashboard />;
       case 'agent-upload':
         return <UploadProperty />;
+      case 'agent-documents':
+        return <DocumentRequests />;
 
       // Lawyer
       case 'lawyer-dashboard':
